@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ultimate Racing | مسابقه نهایی</title>
+<style>
+  :root {
+    --bg-dark: #090d16;
+    --bg-panel: rgba(15, 23, 42, 0.88);
+    --accent: #00e5ff;
+    --accent-2: #ff2a85;
+    --gold: #fbbf24;
+    --green: #22c55e;
+    --red: #ef4444;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --border: rgba(255, 255, 255, 0.14);
+  }
+
+  * {
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-dark);
+    color: var(--text);
+    font-family: Tahoma, "Segoe UI", system-ui, -apple-system, sans-serif;
+    touch-action: none;
+  }
+
+  #gameCanvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 1;
+  }
+
+  /* Screens & Overlays */
+  .screen {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: radial-gradient(circle at center, rgba(15, 23, 42, 0.72), rgba(5, 8, 15, 0.94));
+    backdrop-filter: blur(8px);
+    overflow-y: auto;
+  }
+
+  .screen.active {
+    display: flex;
+    animation: fadeIn 0.25s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .panel {
+    width: 100%;
+    max-width: 980px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+
+  .logo-box {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .logo-title {
+    font-size: clamp(2rem, 5vw, 3.6rem);
+    font-weight: 900;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, #00e5ff 0%, #ffffff 50%, #ff2a85 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 30px rgba(0, 229, 255, 0.35);
+    direction: ltr;
+  }
+
+  .logo-sub {
+    color: var(--gold);
+    font-size: 1.05rem;
+    margin-top: 6px;
+    font-weight: bold;
+  }
+
+  .menu-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 22px;
+  }
+
+  .summary-pill {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+
+  .summary-pill span {
+    color: var(--accent);
+    font-weight: bold;
+  }
+
+  .menu-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .btn {
+    border: none;
+    border-radius: 14px;
+    padding: 14px 20px;
+    font-size: 1.05rem;
+    font-weight: bold;
+    font-family: inherit;
+    cursor: pointer;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.18);
+  }
+
+  .btn:active {
+    transform: scale(0.97);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #00c6ff, #0072ff);
+    border: none;
+    box-shadow: 0 8px 24px rgba(0, 114, 255, 0.4);
+    grid-column: 1 / -1;
+    font-size: 1.25rem;
+    padding: 16px;
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #1ad1ff, #1a82ff);
+  }
+
+  .btn-danger {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    border: none;
+  }
+
+  .btn-success {
+    background: linear-gradient(135deg, #22c55e, #15803d);
+    border: none;
+  }
+
+  .screen-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .screen-header h2 {
+    font-size: 1.4rem;
+    color: var(--accent);
+  }
+
+  /* Car Grid */
+  .cars-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 14px;
+  }
+
+  .car-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .car-card:hover {
+    background: rgba(255, 255, 255, 0.09);
+    transform: translateY(-2px);
+  }
+
+  .car-card.selected {
+    border-color: var(--accent);
+    background: rgba(0, 229, 255, 0.12);
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.25);
+  }
+
+  .car-preview {
+    width: 100%;
+    height: 90px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 10px;
+  }
+
+  .car-name {
+    font-weight: bold;
+    font-size: 1.05rem;
+    text-align: center;
+  }
+
+  .stat-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .stat-label {
+    width: 72px;
+    flex-shrink: 0;
+  }
+
+  .stat-bar {
+    flex: 1;
+    height: 7px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .stat-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  }
+
+  /* Track Grid */
+  .tracks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+  }
+
+  .track-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .track-card.selected {
+    border-color: var(--gold);
+    background: rgba(251, 191, 36, 0.12);
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.25);
+  }
+
+  .track-banner {
+    height: 110px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .track-card h3 {
+    margin-bottom: 6px;
+    color: #fff;
+  }
+
+  .track-card p {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Settings */
+  .settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .setting-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+
+  .setting-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .opt-btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.9rem;
+  }
+
+  .opt-btn.active {
+    background: var(--accent);
+    color: #000;
+    font-weight: bold;
+    border-color: var(--accent);
+  }
+
+  /* HUD */
+  #hud {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+    display: none;
+  }
+
+  #hud.active {
+    display: block;
+  }
+
+  .hud-top {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .hud-stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .hud-box {
+    background: rgba(9, 13, 22, 0.78);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(6px);
+    border-radius: 12px;
+    padding: 8px 14px;
+    min-width: 90px;
+    text-align: center;
+  }
+
+  .hud-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .hud-val {
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: #fff;
+    direction: ltr;
+  }
+
+  .hud-val.gold { color: var(--gold); }
+  .hud-val.cyan { color: var(--accent); }
+
+  .hud-center {
+    flex: 1;
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  #minimapCanvas {
+    width: 100%;
+    height: 44px;
+    background: rgba(9, 13, 22, 0.78);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  .progress-wrap {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+    transition: width 0.1s linear;
+  }
+
+  .hud-actions {
+    display: flex;
+    gap: 8px;
+    pointer-events: auto;
+  }
+
+  .hud-icon-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(9, 13, 22, 0.82);
+    color: #fff;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Speedometer */
+  .speedo-box {
+    position: absolute;
+    bottom: 165px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(9, 13, 22, 0.75);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 6px 18px;
+    text-align: center;
+  }
+
+  .speedo-num {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--accent);
+    direction: ltr;
+  }
+
+  .speedo-unit {
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  /* On-screen Touch & Mouse Controls */
+  .controls-layer {
+    position: absolute;
+    bottom: 18px;
+    left: 18px;
+    right: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    pointer-events: none;
+  }
+
+  .ctrl-group {
+    display: flex;
+    gap: 12px;
+    pointer-events: auto;
+  }
+
+  .ctrl-btn {
+    width: 78px;
+    height: 78px;
+    border-radius: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    background: rgba(15, 23, 42, 0.72);
+    color: #fff;
+    font-size: 1.35rem;
+    font-weight: bold;
+    font-family: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+    transition: transform 0.08s ease, background 0.08s ease;
+  }
+
+  .ctrl-btn small {
+    font-size: 0.72rem;
+    opacity: 0.85;
+  }
+
+  .ctrl-btn.pressed, .ctrl-btn:active {
+    transform: scale(0.92);
+    background: rgba(0, 229, 255, 0.35);
+    border-color: var(--accent);
+  }
+
+  .ctrl-gas {
+    width: 86px;
+    height: 96px;
+    background: rgba(34, 197, 94, 0.28);
+    border-color: rgba(34, 197, 94, 0.65);
+  }
+
+  .ctrl-gas.pressed, .ctrl-gas:active {
+    background: rgba(34, 197, 94, 0.65);
+  }
+
+  .ctrl-brake {
+    width: 82px;
+    height: 82px;
+    background: rgba(239, 68, 68, 0.28);
+    border-color: rgba(239, 68, 68, 0.65);
+  }
+
+  .ctrl-brake.pressed, .ctrl-brake:active {
+    background: rgba(239, 68, 68, 0.65);
+  }
+
+  .ctrl-handbrake {
+    width: 64px;
+    height: 64px;
+    font-size: 0.85rem;
+    background: rgba(251, 191, 36, 0.22);
+    border-color: rgba(251, 191, 36, 0.6);
+  }
+
+  /* Countdown */
+  #countdownOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  #countdownText {
+    font-size: clamp(4rem, 12vw, 8rem);
+    font-weight: 900;
+    color: var(--gold);
+    text-shadow: 0 0 40px rgba(251, 191, 36, 0.8);
+  }
+
+  /* Results Table */
+  .results-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+  }
+
+  .results-table th, .results-table td {
+    padding: 10px 12px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .results-table tr.player-row {
+    background: rgba(0, 229, 255, 0.16);
+    font-weight: bold;
+    color: var(--accent);
+  }
+
+  @media (max-width: 680px) {
+    .hud-center { display: none; }
+    .ctrl-btn { width: 66px; height: 66px; font-size: 1.1rem; }
+    .ctrl-gas { width: 74px; height: 84px; }
+    .ctrl-brake { width: 70px; height: 70px; }
+    .speedo-box { bottom: 115px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<!-- Countdown -->
+<div id="countdownOverlay"><div id="countdownText">3</div></div>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="hud-top">
+    <div class="hud-stats">
+      <div class="hud-box">
+        <div class="hud-label">رتبه</div>
+        <div class="hud-val gold" id="hudRank">1 / 6</div>
+      </div>
+      <div class="hud-box">
+        <div class="hud-label">دور</div>
+        <div class="hud-val cyan" id="hudLap">1 / 3</div>
+      </div>
+      <div class="hud-box">
+        <div class="hud-label">زمان</div>
+        <div class="hud-val" id="hudTime">00:00.0</div>
+      </div>
+    </div>
+
+    <div class="hud-center">
+      <canvas id="minimapCanvas" width="320" height="44"></canvas>
+      <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <div class="hud-actions">
+      <button class="hud-icon-btn" id="hudSoundBtn" title="صدا">🔊</button>
+      <button class="hud-icon-btn" id="hudPauseBtn" title="توقف">⏸</button>
+    </div>
+  </div>
+
+  <div class="speedo-box">
+    <div class="speedo-num" id="hudSpeed">0</div>
+    <div class="speedo-unit">کیلومتر بر ساعت</div>
+  </div>
+
+  <div class="controls-layer">
+    <div class="ctrl-group">
+      <button class="ctrl-btn" id="btnRight">◀<small>راست</small></button>
+      <button class="ctrl-btn" id="btnLeft">▶<small>چپ</small></button>
+    </div>
+    <div class="ctrl-group">
+      <button class="ctrl-btn ctrl-handbrake" id="btnHandbrake">ترمز<br>دستی</button>
+      <button class="ctrl-btn ctrl-brake" id="btnBrake">ترمز<small>S / ▼</small></button>
+      <button class="ctrl-btn ctrl-gas" id="btnGas">گاز<small>W / ▲</small></button>
+    </div>
+  </div>
+</div>
+
+<!-- Start Screen -->
+<div id="startScreen" class="screen active">
+  <div class="panel">
+    <div class="logo-box">
+      <div class="logo-title">ULTIMATE RACING</div>
+      <div class="logo-sub">مسابقه نهایی | شبیه‌ساز مسابقه‌ای شبه‌سه‌بعدی</div>
+    </div>
+
+    <div class="menu-summary">
+      <div class="summary-pill">خودرو: <span id="summaryCar">تندر GT</span></div>
+      <div class="summary-pill">مسیر: <span id="summaryTrack">مسیر شهری</span></div>
+      <div class="summary-pill">دورها: <span id="summaryLaps">3 دور</span></div>
+      <div class="summary-pill">سختی: <span id="summaryDiff">متوسط</span></div>
+    </div>
+
+    <div class="menu-buttons">
+      <button class="btn btn-primary" id="btnStartRace">🏁 شروع مسابقه</button>
+      <button class="btn" id="btnOpenCars">🚗 انتخاب ماشین (۸ خودرو)</button>
+      <button class="btn" id="btnOpenTracks">🗺️ انتخاب مسیر (۳ مسیر)</button>
+      <button class="btn" id="btnOpenSettings">⚙️ تنظیمات بازی</button>
+    </div>
+  </div>
+</div>
+
+<!-- Car Selection Screen -->
+<div id="carScreen" class="screen">
+  <div class="panel">
+    <div class="screen-header">
+      <h2>🚗 انتخاب خودروی مسابقه‌ای</h2>
+      <button class="btn" data-back="startScreen">بازگشت</button>
+    </div>
+    <div class="cars-grid" id="carsGrid"></div>
+  </div>
+</div>
+
+<!-- Track Selection Screen -->
+<div id="trackScreen" class="screen">
+  <div class="panel">
+    <div class="screen-header">
+      <h2>🗺️ انتخاب مسیر مسابقه</h2>
+      <button class="btn" data-back="startScreen">بازگشت</button>
+    </div>
+    <div class="tracks-grid" id="tracksGrid"></div>
+  </div>
+</div>
+
+<!-- Settings Screen -->
+<div id="settingsScreen" class="screen">
+  <div class="panel">
+    <div class="screen-header">
+      <h2>⚙️ تنظیمات بازی</h2>
+      <button class="btn" id="btnSettingsBack">بازگشت</button>
+    </div>
+    <div class="settings-list">
+      <div class="setting-item">
+        <div>کیفیت گرافیک</div>
+        <div class="setting-options" data-setting="quality">
+          <button class="opt-btn" data-val="low">پایین</button>
+          <button class="opt-btn" data-val="medium">متوسط</button>
+          <button class="opt-btn active" data-val="high">بالا</button>
+        </div>
+      </div>
+      <div class="setting-item">
+        <div>صدای بازی</div>
+        <div class="setting-options" data-setting="sound">
+          <button class="opt-btn active" data-val="on">روشن</button>
+          <button class="opt-btn" data-val="off">خاموش</button>
+        </div>
+      </div>
+      <div class="setting-item">
+        <div>سطح سختی رقبا</div>
+        <div class="setting-options" data-setting="difficulty">
+          <button class="opt-btn" data-val="easy">آسان</button>
+          <button class="opt-btn active" data-val="medium">متوسط</button>
+          <button class="opt-btn" data-val="hard">سخت</button>
+        </div>
+      </div>
+      <div class="setting-item">
+        <div>تعداد دور مسابقه</div>
+        <div class="setting-options" data-setting="laps">
+          <button class="opt-btn" data-val="1">۱ دور</button>
+          <button class="opt-btn" data-val="2">۲ دور</button>
+          <button class="opt-btn active" data-val="3">۳ دور</button>
+          <button class="opt-btn" data-val="5">۵ دور</button>
+        </div>
+      </div>
+      <div class="setting-item">
+        <div>انتخاب سریع</div>
+        <div class="setting-options">
+          <button class="opt-btn" id="btnSetCar">تغییر ماشین</button>
+          <button class="opt-btn" id="btnSetTrack">تغییر مسیر</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pause Screen -->
+<div id="pauseScreen" class="screen">
+  <div class="panel" style="max-width: 440px; text-align: center;">
+    <h2 style="color: var(--accent); margin-bottom: 18px;">⏸ بازی متوقف شد</h2>
+    <div class="menu-buttons" style="grid-template-columns: 1fr;">
+      <button class="btn btn-success" id="btnResume">▶ ادامه مسابقه</button>
+      <button class="btn" id="btnRestartFromPause">🔄 شروع مجدد مسابقه</button>
+      <button class="btn" id="btnSettingsFromPause">⚙️ تنظیمات</button>
+      <button class="btn btn-danger" id="btnQuitToMenu">🏠 خروج به منوی اصلی</button>
+    </div>
+  </div>
+</div>
+
+<!-- Finish Screen -->
+<div id="finishScreen" class="screen">
+  <div class="panel" style="max-width: 620px; text-align: center;">
+    <h2 id="finishTitle" style="font-size: 2rem; color: var(--gold); margin-bottom: 8px;">🏆 پایان مسابقه!</h2>
+    <p id="finishSub" style="color: var(--muted); margin-bottom: 16px;"></p>
+
+    <div class="menu-summary">
+      <div class="summary-pill">رتبه نهایی: <span id="resRank">1</span></div>
+      <div class="summary-pill">زمان ثبت‌شده: <span id="resTime">00:00.0</span></div>
+      <div class="summary-pill">خودرو: <span id="resCar">تندر GT</span></div>
+    </div>
+
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th>رتبه</th>
+          <th>راننده / خودرو</th>
+          <th>وضعیت</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+
+    <div class="menu-buttons">
+      <button class="btn btn-primary" id="btnPlayAgain">🔄 مسابقه مجدد</button>
+      <button class="btn" id="btnFinishMenu">🏠 منوی اصلی</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ==================== DATA: 8 CARS ====================
+  const CARS = [
+    { id: 0, name: 'تندر GT', color: '#ef4444', accent: '#ffffff', maxSpeed: 295, accel: 86, handling: 82, braking: 84 },
+    { id: 1, name: 'شبح نئون', color: '#00e5ff', accent: '#0f172a', maxSpeed: 285, accel: 82, handling: 95, braking: 88 },
+    { id: 2, name: 'طوفان طلایی', color: '#f59e0b', accent: '#1e293b', maxSpeed: 290, accel: 94, handling: 78, braking: 80 },
+    { id: 3, name: 'اژدهای سیاه', color: '#1e293b', accent: '#f97316', maxSpeed: 315, accel: 80, handling: 75, braking: 78 },
+    { id: 4, name: 'یوزپلنگ سفید', color: '#f8fafc', accent: '#06b6d4', maxSpeed: 280, accel: 88, handling: 90, braking: 92 },
+    { id: 5, name: 'آتش‌فشان V8', color: '#ea580c', accent: '#fef08a', maxSpeed: 305, accel: 85, handling: 76, braking: 86 },
+    { id: 6, name: 'سایبر X9', color: '#a855f7', accent: '#22d3ee', maxSpeed: 308, accel: 91, handling: 85, braking: 85 },
+    { id: 7, name: 'زمرد توربو', color: '#10b981', accent: '#ecfdf5', maxSpeed: 288, accel: 84, handling: 92, braking: 90 }
+  ];
+
+  // ==================== DATA: 3 TRACKS ====================
+  const TRACKS = [
+    {
+      id: 'city',
+      name: 'مسیر شهری',
+      icon: '🏙️',
+      desc: 'خیابان‌های مدرن شبانه با برج‌های نورانی، چراغ‌های شهری و پیچ‌های سریع.',
+      skyTop: '#0b1026',
+      skyBot: '#1e293b',
+      groundLight: '#1e293b',
+      groundDark: '#172033',
+      roadLight: '#334155',
+      roadDark: '#2b3648',
+      curbLight: '#ef4444',
+      curbDark: '#f8fafc',
+      bannerBg: 'linear-gradient(135deg, #0f172a, #1d4ed8)',
+      propType: 'city'
+    },
+    {
+      id: 'mountain',
+      name: 'مسیر کوهستانی',
+      icon: '⛰️',
+      desc: 'جاده‌های پیچ‌درپیچ کوهستانی با درختان کاج، صخره‌ها و شیب‌های هیجان‌انگیز.',
+      skyTop: '#0284c7',
+      skyBot: '#bae6fd',
+      groundLight: '#15803d',
+      groundDark: '#166534',
+      roadLight: '#475569',
+      roadDark: '#3f4c5e',
+      curbLight: '#f59e0b',
+      curbDark: '#ffffff',
+      bannerBg: 'linear-gradient(135deg, #0369a1, #15803d)',
+      propType: 'mountain'
+    },
+    {
+      id: 'desert',
+      name: 'مسیر بیابانی',
+      icon: '🏜️',
+      desc: 'جاده‌های طولانی و داغ کویری با شن‌های طلایی، کاکتوس‌ها و سرعت‌های بالا.',
+      skyTop: '#c2410c',
+      skyBot: '#fde68a',
+      groundLight: '#d97706',
+      groundDark: '#b45309',
+      roadLight: '#57534e',
+      roadDark: '#44403c',
+      curbLight: '#ffffff',
+      curbDark: '#dc2626',
+      bannerBg: 'linear-gradient(135deg, #b45309, #f59e0b)',
+      propType: 'desert'
+    }
+  ];
+
+  // ==================== STATE ====================
+  const state = {
+    selectedCar: 0,
+    selectedTrack: 0,
+    quality: 'high',
+    sound: true,
+    difficulty: 'medium',
+    laps: 3,
+    mode: 'menu', // menu, countdown, racing, paused, finished
+    returnScreen: 'startScreen'
+  };
+
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const miniCanvas = document.getElementById('minimapCanvas');
+  const miniCtx = miniCanvas.getContext('2d');
+
+  // ==================== WEB AUDIO ENGINE ====================
+  class SoundEngine {
+    constructor() {
+      this.ctx = null;
+      this.engineOsc = null;
+      this.engineGain = null;
+      this.initialized = false;
+    }
+
+    init() {
+      if (this.initialized) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioCtx();
+        this.engineOsc = this.ctx.createOscillator();
+        this.engineGain = this.ctx.createGain();
+        this.engineOsc.type = 'sawtooth';
+        this.engineOsc.frequency.value = 60;
+        this.engineGain.gain.value = 0;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 320;
+
+        this.engineOsc.connect(filter);
+        filter.connect(this.engineGain);
+        this.engineGain.connect(this.ctx.destination);
+        this.engineOsc.start();
+        this.initialized = true;
+      } catch (e) {}
+    }
+
+    updateEngine(speedRatio, active) {
+      if (!this.initialized || !this.ctx) return;
+      if (!state.sound || !active) {
+        this.engineGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05);
+        return;
+      }
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const freq = 55 + speedRatio * 145;
+      this.engineOsc.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.06);
+      this.engineGain.gain.setTargetAtTime(0.045 + speedRatio * 0.045, this.ctx.currentTime, 0.06);
+    }
+
+    playBeep(freq = 520, dur = 0.14, type = 'sine', vol = 0.12) {
+      if (!state.sound) return;
+      this.init();
+      if (!this.ctx) return;
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(vol, this.ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur);
+      osc.connect(g);
+      g.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + dur);
+    }
+
+    playScreech() {
+      if (!state.sound || !this.ctx) return;
+      this.playBeep(320 + Math.random() * 90, 0.08, 'triangle', 0.04);
+    }
+
+    playPass() {
+      this.playBeep(680, 0.12, 'sine', 0.07);
+    }
+
+    playFinish() {
+      [523, 659, 784, 1046].forEach((f, i) => {
+        setTimeout(() => this.playBeep(f, 0.22, 'triangle', 0.12), i * 110);
+      });
+    }
+  }
+  const audio = new SoundEngine();
+
+  // ==================== INPUT ====================
+  const keys = { up: false, down: false, left: false, right: false, handbrake: false };
+
+  window.addEventListener('keydown', (e) => {
+    const k = e.key.toLowerCase();
+    if (k === 'w' || e.key === 'ArrowUp') keys.up = true;
+    if (k === 's' || e.key === 'ArrowDown') keys.down = true;
+    if (k === 'a' || e.key === 'ArrowLeft') keys.left = true;
+    if (k === 'd' || e.key === 'ArrowRight') keys.right = true;
+    if (e.code === 'Space') keys.handbrake = true;
+    if ((e.key === 'Escape' || k === 'p') && (state.mode === 'racing' || state.mode === 'paused')) {
+      togglePause();
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    const k = e.key.toLowerCase();
+    if (k === 'w' || e.key === 'ArrowUp') keys.up = false;
+    if (k === 's' || e.key === 'ArrowDown') keys.down = false;
+    if (k === 'a' || e.key === 'ArrowLeft') keys.left = false;
+    if (k === 'd' || e.key === 'ArrowRight') keys.right = false;
+    if (e.code === 'Space') keys.handbrake = false;
+  });
+
+  function bindControlBtn(id, keyName) {
+    const el = document.getElementById(id);
+    const press = (e) => { e.preventDefault(); keys[keyName] = true; el.classList.add('pressed'); };
+    const release = (e) => { e.preventDefault(); keys[keyName] = false; el.classList.remove('pressed'); };
+    el.addEventListener('pointerdown', press);
+    el.addEventListener('pointerup', release);
+    el.addEventListener('pointerleave', release);
+    el.addEventListener('pointercancel', release);
+  }
+  bindControlBtn('btnGas', 'up');
+  bindControlBtn('btnBrake', 'down');
+  bindControlBtn('btnLeft', 'left');
+  bindControlBtn('btnRight', 'right');
+  bindControlBtn('btnHandbrake', 'handbrake');
+
+  // ==================== TRACK GENERATOR ====================
+  const SEGMENT_LENGTH = 200;
+  const ROAD_WIDTH = 2000;
+  const CAMERA_HEIGHT = 1000;
+  const CAMERA_DEPTH = 0.84;
+  let segments = [];
+  let trackLength = 0;
+
+  function buildTrack(trackId) {
+    segments = [];
+    const addRoad = (enter, hold, leave, curve, hill) => {
+      const startY = segments.length ? segments[segments.length - 1].p2.world.y : 0;
+      const endY = startY + hill * SEGMENT_LENGTH;
+      const total = enter + hold + leave;
+      for (let n = 0; n < total; n++) {
+        const idx = segments.length;
+        let c = 0;
+        if (n < enter) c = curve * (n / enter);
+        else if (n < enter + hold) c = curve;
+        else c = curve * (1 - (n - enter - hold) / leave);
+
+        const y1 = startY + (endY - startY) * (n / total);
+        const y2 = startY + (endY - startY) * ((n + 1) / total);
+
+        segments.push({
+          index: idx,
+          p1: { world: { y: y1, z: idx * SEGMENT_LENGTH }, camera: {}, screen: {} },
+          p2: { world: { y: y2, z: (idx + 1) * SEGMENT_LENGTH }, camera: {}, screen: {} },
+          curve: c,
+          sprites: [],
+          colorIndex: Math.floor(idx / 3) % 2
+        });
+      }
+    };
+
+    if (trackId === 'city') {
+      addRoad(15, 30, 15, 0, 0);
+      addRoad(20, 40, 20, 2.2, 0);
+      addRoad(15, 25, 15, -1.8, 12);
+      addRoad(20, 35, 20, 0, -12);
+      addRoad(20, 45, 20, -2.6, 0);
+      addRoad(15, 30, 15, 1.5, 0);
+      addRoad(20, 40, 20, 0, 0);
+    } else if (trackId === 'mountain') {
+      addRoad(15, 25, 15, 0, 10);
+      addRoad(25, 45, 25, 3.2, 25);
+      addRoad(20, 35, 20, -3.4, -20);
+      addRoad(20, 40, 20, 2.5, 18);
+      addRoad(25, 40, 25, -2.8, -33);
+      addRoad(15, 30, 15, 1.2, 0);
+    } else {
+      addRoad(20, 50, 20, 0, 0);
+      addRoad(25, 60, 25, 1.6, 8);
+      addRoad(20, 45, 20, -1.9, -8);
+      addRoad(25, 65, 25, 2.1, 0);
+      addRoad(20, 40, 20, -1.4, 0);
+      addRoad(20, 45, 20, 0, 0);
+    }
+
+    // Add roadside props
+    const step = state.quality === 'low' ? 6 : state.quality === 'medium' ? 4 : 3;
+    for (let i = 6; i < segments.length - 4; i += step) {
+      const side = (i % 2 === 0) ? -1 : 1;
+      segments[i].sprites.push({
+        offset: side * (1.28 + Math.random() * 0.9),
+        type: TRACKS[state.selectedTrack].propType,
+        variant: Math.floor(Math.random() * 3)
+      });
+    }
+
+    trackLength = segments.length * SEGMENT_LENGTH;
+  }
+
+  // ==================== RACE ENTITIES ====================
+  let player = {
+    x: 0,
+    z: 0,
+    speed: 0,
+    lap: 1,
+    totalDist: 0,
+    steerAngle: 0,
+    finished: false,
+    finishTime: 0
+  };
+
+  let aiCars = [];
+  let particles = [];
+  let raceTime = 0;
+  let lastFrameTime = 0;
+
+  function initRace() {
+    buildTrack(TRACKS[state.selectedTrack].id);
+    const carSpec = CARS[state.selectedCar];
+    player = {
+      x: -0.35,
+      z: 0,
+      speed: 0,
+      lap: 1,
+      totalDist: 0,
+      steerAngle: 0,
+      finished: false,
+      finishTime: 0,
+      maxSpeed: carSpec.maxSpeed * 42,
+      accel: (carSpec.accel / 100) * 6800,
+      handling: (carSpec.handling / 100) * 2.5,
+      braking: (carSpec.braking / 100) * 9500
+    };
+
+    aiCars = [];
+    const diffMult = state.difficulty === 'easy' ? 0.78 : state.difficulty === 'hard' ? 1.02 : 0.9;
+    const otherCars = CARS.filter(c => c.id !== state.selectedCar).slice(0, 5);
+
+    otherCars.forEach((c, idx) => {
+      const lane = (idx % 2 === 0 ? 0.35 : -0.35) + (Math.random() * 0.2 - 0.1);
+      aiCars.push({
+        car: c,
+        x: lane,
+        targetX: lane,
+        z: (idx + 1) * 320,
+        totalDist: (idx + 1) * 320,
+        speed: 0,
+        maxSpeed: c.maxSpeed * 40 * diffMult * (0.94 + Math.random() * 0.12),
+        lap: 1,
+        finished: false,
+        finishTime: 0,
+        passedPlayer: false
+      });
+    });
+
+    particles = [];
+    raceTime = 0;
+    updateHUD();
+  }
+
+  // ==================== DRAWING HELPERS ====================
+  function drawCarGraphic(targetCtx, x, y, w, h, car, steer = 0, isBraking = false, isPlayer = false) {
+    targetCtx.save();
+    targetCtx.translate(x, y);
+    targetCtx.rotate(steer * 0.08);
+
+    // Shadow
+    targetCtx.fillStyle = 'rgba(0,0,0,0.45)';
+    targetCtx.beginPath();
+    targetCtx.ellipse(0, h * 0.42, w * 0.54, h * 0.16, 0, 0, Math.PI * 2);
+    targetCtx.fill();
+
+    // Wheels
+    targetCtx.fillStyle = '#0f172a';
+    targetCtx.fillRect(-w * 0.52, -h * 0.1, w * 0.14, h * 0.45);
+    targetCtx.fillRect(w * 0.38, -h * 0.1, w * 0.14, h * 0.45);
+
+    // Main body
+    targetCtx.fillStyle = car.color;
+    targetCtx.beginPath();
+    targetCtx.roundRect(-w * 0.46, -h * 0.35, w * 0.92, h * 0.65, w * 0.12);
+    targetCtx.fill();
+
+    // Accent stripe
+    targetCtx.fillStyle = car.accent;
+    targetCtx.fillRect(-w * 0.12, -h * 0.35, w * 0.24, h * 0.65);
+
+    // Cabin / Windshield
+    targetCtx.fillStyle = '#0f172a';
+    targetCtx.beginPath();
+    targetCtx.roundRect(-w * 0.34, -h * 0.55, w * 0.68, h * 0.32, w * 0.1);
+    targetCtx.fill();
+
+    // Spoiler
+    targetCtx.fillStyle = car.accent;
+    targetCtx.fillRect(-w * 0.44, -h * 0.42, w * 0.88, h * 0.08);
+
+    // Tail lights
+    targetCtx.fillStyle = isBraking ? '#ff1e1e' : '#991b1b';
+    if (isBraking) {
+      targetCtx.shadowColor = '#ff1e1e';
+      targetCtx.shadowBlur = 14;
+    }
+    targetCtx.fillRect(-w * 0.4, h * 0.08, w * 0.2, h * 0.12);
+    targetCtx.fillRect(w * 0.2, h * 0.08, w * 0.2, h * 0.12);
+    targetCtx.shadowBlur = 0;
+
+    if (isPlayer) {
+      targetCtx.fillStyle = '#00e5ff';
+      targetCtx.beginPath();
+      targetCtx.moveTo(0, -h * 0.72);
+      targetCtx.lineTo(-8, -h * 0.88);
+      targetCtx.lineTo(8, -h * 0.88);
+      targetCtx.closePath();
+      targetCtx.fill();
+    }
+
+    targetCtx.restore();
+  }
+
+  function drawProp(type, variant, x, y, scale) {
+    const s = scale * 180;
+    if (s < 4) return;
+    ctx.save();
+    ctx.translate(x, y);
+
+    if (type === 'city') {
+      const h = s * (1.8 + variant * 0.7);
+      const w = s * 0.9;
+      ctx.fillStyle = variant === 0 ? '#1e293b' : variant === 1 ? '#0f172a' : '#334155';
+      ctx.fillRect(-w / 2, -h, w, h);
+      ctx.fillStyle = '#fde047';
+      const rows = Math.min(8, Math.floor(h / 18));
+      for (let r = 1; r < rows; r++) {
+        ctx.fillRect(-w * 0.32, -h + r * (h / rows), w * 0.2, h * 0.05);
+        ctx.fillRect(w * 0.12, -h + r * (h / rows), w * 0.2, h * 0.05);
+      }
+    } else if (type === 'mountain') {
+      const h = s * (1.5 + variant * 0.3);
+      ctx.fillStyle = '#451a03';
+      ctx.fillRect(-s * 0.08, -h * 0.25, s * 0.16, h * 0.25);
+      ctx.fillStyle = variant === 0 ? '#14532d' : '#166534';
+      ctx.beginPath();
+      ctx.moveTo(0, -h);
+      ctx.lineTo(-s * 0.45, -h * 0.2);
+      ctx.lineTo(s * 0.45, -h * 0.2);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      // Desert cactus / rock
+      if (variant === 2) {
+        ctx.fillStyle = '#78350f';
+        ctx.beginPath();
+        ctx.ellipse(0, -s * 0.25, s * 0.45, s * 0.28, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(-s * 0.1, -s * 1.1, s * 0.2, s * 1.1);
+        ctx.fillRect(-s * 0.32, -s * 0.75, s * 0.22, s * 0.12);
+        ctx.fillRect(s * 0.1, -s * 0.65, s * 0.22, s * 0.12);
+      }
+    }
+    ctx.restore();
+  }
+
+  // ==================== RENDERING ====================
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function project(p, camX, camY, camZ) {
+    p.camera.x = (p.world.x || 0) - camX;
+    p.camera.y = (p.world.y || 0) - camY;
+    p.camera.z = (p.world.z || 0) - camZ;
+    const scale = CAMERA_DEPTH / Math.max(1, p.camera.z);
+    p.screen.scale = scale;
+    p.screen.x = Math.round((canvas.width / 2) + (scale * p.camera.x * canvas.width / 2));
+    p.screen.y = Math.round((canvas.height / 2) - (scale * p.camera.y * canvas.height / 2));
+    p.screen.w = Math.round(scale * ROAD_WIDTH * canvas.width / 2);
+  }
+
+  function drawPoly(x1, y1, x2, y2, x3, y3, x4, y4, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.lineTo(x3, y3);
+    ctx.lineTo(x4, y4);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function renderGame() {
+    const trk = TRACKS[state.selectedTrack];
+    const W = canvas.width;
+    const H = canvas.height;
+
+    // Sky
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, H * 0.55);
+    skyGrad.addColorStop(0, trk.skyTop);
+    skyGrad.addColorStop(1, trk.skyBot);
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Background mountains/cityscape silhouette
+    ctx.fillStyle = trk.id === 'city' ? 'rgba(15,23,42,0.85)' : 'rgba(0,0,0,0.22)';
+    ctx.beginPath();
+    ctx.moveTo(0, H * 0.52);
+    for (let x = 0; x <= W; x += 60) {
+      const hOff = Math.sin(x * 0.012 + player.x * 2) * 35 + (trk.id === 'city' ? ((x % 120 === 0) ? -45 : 0) : 0);
+      ctx.lineTo(x, H * 0.48 + hOff);
+    }
+    ctx.lineTo(W, H * 0.55);
+    ctx.closePath();
+    ctx.fill();
+
+    if (!segments.length) return;
+
+    const baseSegIndex = Math.floor(player.z / SEGMENT_LENGTH) % segments.length;
+    const baseSeg = segments[baseSegIndex];
+    const camY = CAMERA_HEIGHT + baseSeg.p1.world.y;
+    let x = 0;
+    let dx = 0;
+    let maxY = H;
+    const drawDistance = state.quality === 'low' ? 90 : state.quality === 'medium' ? 130 : 170;
+
+    const visibleSegs = [];
+
+    for (let n = 0; n < drawDistance; n++) {
+      const seg = segments[(baseSegIndex + n) % segments.length];
+      const looped = (baseSegIndex + n) >= segments.length;
+      const camZ = player.z - (looped ? trackLength : 0);
+
+      seg.p1.world.x = x;
+      seg.p2.world.x = x + dx;
+      project(seg.p1, player.x * ROAD_WIDTH, camY, camZ);
+      project(seg.p2, player.x * ROAD_WIDTH, camY, camZ);
+
+      x += dx;
+      dx += seg.curve;
+
+      if (seg.p1.camera.z <= CAMERA_DEPTH || seg.p2.screen.y >= maxY) continue;
+
+      const s1 = seg.p1.screen;
+      const s2 = seg.p2.screen;
+
+      // Ground
+      ctx.fillStyle = seg.colorIndex ? trk.groundDark : trk.groundLight;
+      ctx.fillRect(0, s2.y, W, s1.y - s2.y + 1);
+
+      // Curbs
+      const curbC = seg.colorIndex ? trk.curbDark : trk.curbLight;
+      drawPoly(s1.x - s1.w * 1.15, s1.y, s1.x - s1.w, s1.y, s2.x - s2.w, s2.y, s2.x - s2.w * 1.15, s2.y, curbC);
+      drawPoly(s1.x + s1.w, s1.y, s1.x + s1.w * 1.15, s1.y, s2.x + s2.w * 1.15, s2.y, s2.x + s2.w, s2.y, curbC);
+
+      // Road
+      const roadC = (seg.index < 3) ? '#ffffff' : (seg.colorIndex ? trk.roadDark : trk.roadLight);
+      drawPoly(s1.x - s1.w, s1.y, s1.x + s1.w, s1.y, s2.x + s2.w, s2.y, s2.x - s2.w, s2.y, roadC);
+
+      // Lane markings
+      if (seg.colorIndex === 0 && seg.index >= 3) {
+        drawPoly(s1.x - s1.w * 0.03, s1.y, s1.x + s1.w * 0.03, s1.y, s2.x + s2.w * 0.03, s2.y, s2.x - s2.w * 0.03, s2.y, 'rgba(255,255,255,0.75)');
+      }
+
+      visibleSegs.push(seg);
+      maxY = s2.y;
+    }
+
+    // Draw props & AI cars back-to-front
+    for (let i = visibleSegs.length - 1; i >= 0; i--) {
+      const seg = visibleSegs[i];
+      const s = seg.p1.screen;
+
+      for (const sp of seg.sprites) {
+        const sx = s.x + sp.offset * s.w;
+        drawProp(sp.type, sp.variant, sx, s.y, s.scale * 12);
+      }
+
+      // AI cars on this segment
+      for (const ai of aiCars) {
+        const aiSeg = Math.floor(ai.z / SEGMENT_LENGTH) % segments.length;
+        if (aiSeg === seg.index) {
+          const ax = s.x + ai.x * s.w;
+          const aw = Math.max(18, s.w * 0.34);
+          const ah = aw * 0.62;
+          drawCarGraphic(ctx, ax, s.y - ah * 0.35, aw, ah, ai.car, 0, false, false);
+        }
+      }
+    }
+
+    // Speed lines
+    const speedRatio = player.speed / player.maxSpeed;
+    if (speedRatio > 0.7 && state.quality !== 'low') {
+      ctx.strokeStyle = `rgba(255,255,255,${(speedRatio - 0.7) * 0.5})`;
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 10; i++) {
+        const lx = Math.random() * W;
+        const ly = Math.random() * H;
+        ctx.beginPath();
+        ctx.moveTo(lx, ly);
+        ctx.lineTo(lx + (lx - W / 2) * 0.15, ly + (ly - H / 2) * 0.15);
+        ctx.stroke();
+      }
+    }
+
+    // Particles (dust/smoke)
+    for (const p of particles) {
+      ctx.fillStyle = `rgba(200, 200, 200, ${p.alpha})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Player car
+    if (state.mode !== 'menu') {
+      const pw = Math.min(130, W * 0.22);
+      const ph = pw * 0.62;
+      drawCarGraphic(
+        ctx,
+        W / 2,
+        H - ph * 0.85,
+        pw,
+        ph,
+        CARS[state.selectedCar],
+        player.steerAngle,
+        keys.down || keys.handbrake,
+        true
+      );
+    }
+  }
+
+  // ==================== UPDATE LOOP ====================
+  function updateRace(dt) {
+    if (state.mode !== 'racing') return;
+
+    raceTime += dt;
+    const seg = segments[Math.floor(player.z / SEGMENT_LENGTH) % segments.length];
+
+    // Acceleration & Braking
+    if (keys.up) {
+      player.speed += player.accel * dt;
+    } else if (keys.down) {
+      player.speed -= player.braking * dt;
+    } else {
+      player.speed -= 2600 * dt;
+    }
+
+    if (keys.handbrake) {
+      player.speed -= player.braking * 1.25 * dt;
+      if (player.speed > 2000) audio.playScreech();
+    }
+
+    // Off-road drag
+    if (Math.abs(player.x) > 1.05) {
+      player.speed -= 5200 * dt;
+      if (player.speed > 1500 && state.quality !== 'low') {
+        particles.push({
+          x: canvas.width / 2 + (Math.random() * 40 - 20),
+          y: canvas.height - 35,
+          size: 6 + Math.random() * 8,
+          alpha: 0.6
+        });
+      }
+    }
+
+    player.speed = Math.max(0, Math.min(player.maxSpeed, player.speed));
+
+    // Steering
+    const speedFactor = Math.min(1, player.speed / 3500);
+    let steerDir = 0;
+    if (keys.left) steerDir = -1;
+    if (keys.right) steerDir = 1;
+    player.steerAngle = steerDir;
+    player.x += steerDir * player.handling * speedFactor * dt;
+
+    // Centrifugal force in curves
+    player.x -= (seg.curve * 0.38) * (player.speed / player.maxSpeed) * dt;
+    player.x = Math.max(-1.8, Math.min(1.8, player.x));
+
+    const prevZ = player.z;
+    player.z += player.speed * dt;
+    player.totalDist += player.speed * dt;
+
+    if (player.z >= trackLength) {
+      player.z -= trackLength;
+      player.lap++;
+      if (player.lap > state.laps) {
+        player.finished = true;
+        player.finishTime = raceTime;
+        finishRace();
+        return;
+      }
+    }
+
+    // Update AI
+    for (const ai of aiCars) {
+      if (ai.finished) continue;
+      const aiSeg = segments[Math.floor(ai.z / SEGMENT_LENGTH) % segments.length];
+      const curveSlow = 1 - Math.min(0.32, Math.abs(aiSeg.curve) * 0.08);
+      const targetSpd = ai.maxSpeed * curveSlow;
+
+      if (ai.speed < targetSpd) ai.speed += 4500 * dt;
+      else ai.speed -= 3500 * dt;
+
+      ai.z += ai.speed * dt;
+      ai.totalDist += ai.speed * dt;
+      if (ai.z >= trackLength) {
+        ai.z -= trackLength;
+        ai.lap++;
+        if (ai.lap > state.laps) {
+          ai.finished = true;
+          ai.finishTime = raceTime;
+        }
+      }
+
+      // Simple lane weaving & collision avoidance
+      ai.x += (ai.targetX - ai.x) * 2 * dt;
+      const dz = Math.abs(ai.totalDist - player.totalDist);
+      if (dz < 180 && Math.abs(ai.x - player.x) < 0.35) {
+        player.speed *= 0.85;
+        ai.targetX = ai.x > player.x ? 0.6 : -0.6;
+      }
+      if (dz < 120 && !ai.passedPlayer && player.speed > ai.speed) {
+        ai.passedPlayer = true;
+        audio.playPass();
+      }
+    }
+
+    // Particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+      particles[i].alpha -= 1.8 * dt;
+      particles[i].size += 12 * dt;
+      if (particles[i].alpha <= 0) particles.splice(i, 1);
+    }
+
+    audio.updateEngine(player.speed / player.maxSpeed, true);
+    updateHUD();
+  }
+
+  function updateHUD() {
+    const all = [
+      { isPlayer: true, dist: player.totalDist },
+      ...aiCars.map(a => ({ isPlayer: false, dist: a.totalDist }))
+    ].sort((a, b) => b.dist - a.dist);
+
+    const rank = all.findIndex(r => r.isPlayer) + 1;
+    document.getElementById('hudRank').textContent = `${rank} / 6`;
+    document.getElementById('hudLap').textContent = `${Math.min(player.lap, state.laps)} / ${state.laps}`;
+    document.getElementById('hudSpeed').textContent = Math.round(player.speed / 42);
+
+    const mins = Math.floor(raceTime / 60).toString().padStart(2, '0');
+    const secs = (raceTime % 60).toFixed(1).padStart(4, '0');
+    document.getElementById('hudTime').textContent = `${mins}:${secs}`;
+
+    const totalRaceDist = trackLength * state.laps;
+    const pct = Math.min(100, (player.totalDist / totalRaceDist) * 100);
+    document.getElementById('progressFill').style.width = `${pct}%`;
+
+    // Minimap
+    miniCtx.clearRect(0, 0, miniCanvas.width, miniCanvas.height);
+    miniCtx.strokeStyle = 'rgba(255,255,255,0.25)';
+    miniCtx.lineWidth = 4;
+    miniCtx.beginPath();
+    miniCtx.moveTo(14, 22);
+    miniCtx.lineTo(miniCanvas.width - 14, 22);
+    miniCtx.stroke();
+
+    // Finish flag on minimap
+    miniCtx.fillStyle = '#fbbf24';
+    miniCtx.fillRect(miniCanvas.width - 16, 10, 4, 24);
+
+    aiCars.forEach(ai => {
+      const p = (ai.totalDist % trackLength) / trackLength;
+      miniCtx.fillStyle = ai.car.color;
+      miniCtx.beginPath();
+      miniCtx.arc(14 + p * (miniCanvas.width - 28), 22, 4.5, 0, Math.PI * 2);
+      miniCtx.fill();
+    });
+
+    const pp = (player.totalDist % trackLength) / trackLength;
+    miniCtx.fillStyle = '#00e5ff';
+    miniCtx.beginPath();
+    miniCtx.arc(14 + pp * (miniCanvas.width - 28), 22, 6, 0, Math.PI * 2);
+    miniCtx.fill();
+  }
+
+  function mainLoop(ts) {
+    if (!lastFrameTime) lastFrameTime = ts;
+    const dt = Math.min(0.05, (ts - lastFrameTime) / 1000);
+    lastFrameTime = ts;
+
+    updateRace(dt);
+    renderGame();
+    requestAnimationFrame(mainLoop);
+  }
+  requestAnimationFrame(mainLoop);
+
+  // ==================== UI & NAVIGATION ====================
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    if (id) document.getElementById(id).classList.add('active');
+  }
+
+  function updateSummary() {
+    document.getElementById('summaryCar').textContent = CARS[state.selectedCar].name;
+    document.getElementById('summaryTrack').textContent = TRACKS[state.selectedTrack].name;
+    document.getElementById('summaryLaps').textContent = `${state.laps} دور`;
+    const diffMap = { easy: 'آسان', medium: 'متوسط', hard: 'سخت' };
+    document.getElementById('summaryDiff').textContent = diffMap[state.difficulty];
+  }
+
+  function renderCarSelection() {
+    const grid = document.getElementById('carsGrid');
+    grid.innerHTML = '';
+    CARS.forEach((car, idx) => {
+      const card = document.createElement('div');
+      card.className = `car-card ${state.selectedCar === idx ? 'selected' : ''}`;
+      card.innerHTML = `
+        <canvas class="car-preview" width="180" height="90"></canvas>
+        <div class="car-name">${car.name}</div>
+        <div class="stat-row"><span class="stat-label">حداکثر سرعت</span><div class="stat-bar"><div class="stat-fill" style="width:${(car.maxSpeed / 320) * 100}%"></div></div></div>
+        <div class="stat-row"><span class="stat-label">شتاب</span><div class="stat-bar"><div class="stat-fill" style="width:${car.accel}%"></div></div></div>
+        <div class="stat-row"><span class="stat-label">هندلینگ</span><div class="stat-bar"><div class="stat-fill" style="width:${car.handling}%"></div></div></div>
+        <div class="stat-row"><span class="stat-label">ترمز</span><div class="stat-bar"><div class="stat-fill" style="width:${car.braking}%"></div></div></div>
+      `;
+      const pCtx = card.querySelector('canvas').getContext('2d');
+      drawCarGraphic(pCtx, 90, 52, 84, 52, car, 0, false, false);
+      card.onclick = () => {
+        state.selectedCar = idx;
+        renderCarSelection();
+        updateSummary();
+      };
+      grid.appendChild(card);
+    });
+  }
+
+  function renderTrackSelection() {
+    const grid = document.getElementById('tracksGrid');
+    grid.innerHTML = '';
+    TRACKS.forEach((trk, idx) => {
+      const card = document.createElement('div');
+      card.className = `track-card ${state.selectedTrack === idx ? 'selected' : ''}`;
+      card.innerHTML = `
+        <div class="track-banner" style="background:${trk.bannerBg}">${trk.icon}</div>
+        <h3>${trk.name}</h3>
+        <p>${trk.desc}</p>
+      `;
+      card.onclick = () => {
+        state.selectedTrack = idx;
+        renderTrackSelection();
+        updateSummary();
+      };
+      grid.appendChild(card);
+    });
+  }
+
+  function startCountdown() {
+    audio.init();
+    initRace();
+    showScreen(null);
+    document.getElementById('hud').classList.add('active');
+    state.mode = 'countdown';
+
+    const overlay = document.getElementById('countdownOverlay');
+    const txt = document.getElementById('countdownText');
+    overlay.style.display = 'flex';
+    let count = 3;
+    txt.textContent = count;
+    audio.playBeep(440, 0.15);
+
+    const timer = setInterval(() => {
+      count--;
+      if (count > 0) {
+        txt.textContent = count;
+        audio.playBeep(440, 0.15);
+      } else if (count === 0) {
+        txt.textContent = 'حرکت!';
+        audio.playBeep(880, 0.25);
+        state.mode = 'racing';
+      } else {
+        clearInterval(timer);
+        overlay.style.display = 'none';
+      }
+    }, 800);
+  }
+
+  function togglePause() {
+    if (state.mode === 'racing') {
+      state.mode = 'paused';
+      audio.updateEngine(0, false);
+      showScreen('pauseScreen');
+    } else if (state.mode === 'paused') {
+      state.mode = 'racing';
+      showScreen(null);
+    }
+  }
+
+  function finishRace() {
+    state.mode = 'finished';
+    audio.updateEngine(0, false);
+    audio.playFinish();
+    document.getElementById('hud').classList.remove('active');
+
+    const all = [
+      { name: `${CARS[state.selectedCar].name} (شما)`, isPlayer: true, dist: player.totalDist, finished: true },
+      ...aiCars.map(a => ({ name: a.car.name, isPlayer: false, dist: a.totalDist, finished: a.finished }))
+    ].sort((a, b) => b.dist - a.dist);
+
+    const rank = all.findIndex(r => r.isPlayer) + 1;
+    const mins = Math.floor(raceTime / 60).toString().padStart(2, '0');
+    const secs = (raceTime % 60).toFixed(1).padStart(4, '0');
+
+    document.getElementById('resRank').textContent = `${rank} از ۶`;
+    document.getElementById('resTime').textContent = `${mins}:${secs}`;
+    document.getElementById('resCar').textContent = CARS[state.selectedCar].name;
+    document.getElementById('finishSub').textContent = rank === 1 ? 'تبریک! شما قهرمان این مسابقه شدید!' : 'مسابقه به پایان رسید!';
+
+    const tbody = document.getElementById('resultsBody');
+    tbody.innerHTML = all.map((r, i) => `
+      <tr class="${r.isPlayer ? 'player-row' : ''}">
+        <td>${i + 1}</td>
+        <td>${r.name}</td>
+        <td>${r.finished ? 'پایان' : 'در مسیر'}</td>
+      </tr>
+    `).join('');
+
+    showScreen('finishScreen');
+  }
+
+  // Button Bindings
+  document.getElementById('btnStartRace').onclick = startCountdown;
+  document.getElementById('btnOpenCars').onclick = () => { renderCarSelection(); showScreen('carScreen'); };
+  document.getElementById('btnOpenTracks').onclick = () => { renderTrackSelection(); showScreen('trackScreen'); };
+  document.getElementById('btnOpenSettings').onclick = () => { state.returnScreen = 'startScreen'; showScreen('settingsScreen'); };
+  document.getElementById('btnSettingsBack').onclick = () => showScreen(state.returnScreen);
+  document.querySelectorAll('[data-back]').forEach(b => b.onclick = () => showScreen(b.dataset.back));
+
+  document.getElementById('hudPauseBtn').onclick = togglePause;
+  document.getElementById('hudSoundBtn').onclick = () => {
+    state.sound = !state.sound;
+    document.getElementById('hudSoundBtn').textContent = state.sound ? '🔊' : '🔇';
+  };
+
+  document.getElementById('btnResume').onclick = togglePause;
+  document.getElementById('btnRestartFromPause').onclick = startCountdown;
+  document.getElementById('btnSettingsFromPause').onclick = () => { state.returnScreen = 'pauseScreen'; showScreen('settingsScreen'); };
+  document.getElementById('btnQuitToMenu').onclick = () => {
+    state.mode = 'menu';
+    audio.updateEngine(0, false);
+    document.getElementById('hud').classList.remove('active');
+    showScreen('startScreen');
+  };
+
+  document.getElementById('btnPlayAgain').onclick = startCountdown;
+  document.getElementById('btnFinishMenu').onclick = () => {
+    state.mode = 'menu';
+    showScreen('startScreen');
+  };
+
+  document.getElementById('btnSetCar').onclick = () => { renderCarSelection(); showScreen('carScreen'); };
+  document.getElementById('btnSetTrack').onclick = () => { renderTrackSelection(); showScreen('trackScreen'); };
+
+  document.querySelectorAll('.setting-options[data-setting]').forEach(group => {
+    const key = group.dataset.setting;
+    group.querySelectorAll('.opt-btn').forEach(btn => {
+      btn.onclick = () => {
+        group.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const val = btn.dataset.val;
+        if (key === 'sound') state.sound = (val === 'on');
+        else if (key === 'laps') state.laps = parseInt(val, 10);
+        else state[key] = val;
+        updateSummary();
+      };
+    });
+  });
+
+  updateSummary();
+  buildTrack('city');
+})();
+</script>
+</body>
+</html>
