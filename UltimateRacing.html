@@ -2157,10 +2157,11 @@ const renderRace = (now) => {
 
   renderBackground(ctx, now);
 
-  const baseSegment = findSegment(r.position);
-  const basePercent = (r.position % SEG) / SEG;
+  const cameraPosition = ((r.position % trackLength) + trackLength) % trackLength;
+  const baseSegment = findSegment(cameraPosition);
+  const basePercent = (cameraPosition % SEG) / SEG;
   const playerY = lerp(baseSegment.p1.world.y, baseSegment.p2.world.y, basePercent);
-  const cameraZ = r.position - PLAYER_Z;
+  const cameraZ = cameraPosition - PLAYER_Z;
   let maxy = VH, x = 0, dx = -(baseSegment.curve * basePercent);
   const visible = [];
   for (let n = 0; n < drawDistance; n++) {
